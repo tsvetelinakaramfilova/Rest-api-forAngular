@@ -2,9 +2,12 @@ const { recipeModel } = require("../models");
 const { newComment } = require("./commentController");
 
 function getRecipes(req, res, next) {
+  const limit = Number(req.query.limit) || 0;
+
   recipeModel
     .find()
-    .populate("userId")
+    .sort({ created_at: -1 })
+    .limit(limit)
     .then((recipes) => res.json(recipes))
     .catch(next);
 }
@@ -14,19 +17,14 @@ function getRecipe(req, res, next) {
 
   recipeModel
     .findById(recipeId)
-    .populate({
-      path: "comments",
-      populate: {
-        path: "userId",
-      },
-    })
+    .populate("products").populate("userId")
     .then((recipe) => res.json(recipe))
     .catch(next);
 }
 
 function createRecipe(req, res, next) {
   const { recipeName, category, products, image, description } = req.body;
-  const { _id: userId } = req.user; 
+  const { _id: userId } = req.user;
 
   recipeModel
     .create({
@@ -38,18 +36,40 @@ function createRecipe(req, res, next) {
       userId,
     })
     .then((recipe) => {
-      res.status(201).json(recipe); 
-    }).catch(next);
-
+      res.status(201).json(recipe);
+    })
+    .catch(next);
 }
 
-function subscribe(req, res, next) {
+function deleteRecipe(req, res, next){
+  // const { recipeId } = req.params;
+
+  const { commentId, recipeId } = req.params;
+    const { _id: userId } = req.user;
+
+    Promise.all([
+      recipeModel.findOneAndDelete({ _id: recipeId }),
+        // userModel.findOneAndUpdate({ _id: userId }, { $pull: { comments: commentId } }),
+        // commentModel.findOneAndUpdate({ _id: recipeId, userId }),
+    ])
+        .then(([deletedOne, _, __]) => {
+            if (deletedOne) {
+                res.status(200).json(deletedOne)
+            } else {
+                res.status(401).json({ message: `Not allowed!` });
+            }
+        })
+        .catch(next);
+}
+
+function updatedRecipe(req, res, next) {
   const recipeId = req.params.recipeId;
-  const { _id: userId } = req.user;
+  const { recipeName, category, products, image, description } = req.body;
+
   recipeModel
     .findByIdAndUpdate(
       { _id: recipeId },
-      { $addToSet: { subscribers: userId } },
+      { recipeName, category, products, image, description } ,
       { new: true }
     )
     .then((updatedRecipe) => {
@@ -78,6 +98,7 @@ module.exports = {
   getRecipes,
   createRecipe,
   getRecipe,
-  subscribe,
+  deleteRecipe,
+  updatedRecipe,
   like,
 };
