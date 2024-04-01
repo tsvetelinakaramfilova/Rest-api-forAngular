@@ -25,58 +25,58 @@ function getComments(req, res, next) {
 //         .catch(next);
 // }
 
-function newComment(text, userId, recipeId) {
-  return commentModel.create({ text, userId, recipeId }).then((comment) => {
-    return Promise.all([
-      recipeModel.findByIdAndUpdate(
-        { _id: recipeId },
-        {
-          $push: { comments: comment._id },
-        },
-        { new: true }
-      ),
-    ]);
-  });
+function newComment(descriptionComment, userId, recipeId) {
+  return commentModel
+    .create({ descriptionComment, userId, recipeId })
+    .then((comment) => {
+      return Promise.all([
+        recipeModel.findByIdAndUpdate(
+          { _id: recipeId },
+          {
+            $push: { comments: comment._id },
+          }
+        ),
+      ]);
+    });
 }
 
 function createComment(req, res, next) {
-  const { recipeId } = req.params;
+  const { recipeId, descriptionComment } = req.body;
   const { _id: userId } = req.user;
-  const { commentText } = req.body;
 
-  newComment(commentText, userId, recipeId)
-    .then(([_, updatedRecipe]) => res.status(200).json(updatedRecipe))
+  newComment(descriptionComment, userId, recipeId)
+    .then((comment) => res.status(201).json(comment))
     .catch(next);
 }
 
-function editComment(req, res, next) {
-  const { commentId } = req.params;
-  const { commentText } = req.body;
-  const { _id: userId } = req.user;
+// function editComment(req, res, next) {
+//   const { commentId } = req.params;
+//   const { commentText } = req.body;
+//   const { _id: userId } = req.user;
 
-  // if the userId is not the same as this one of the comment, the comment will not be updated
-  commentModel
-    .findOneAndUpdate(
-      { _id: commentId, userId },
-      { text: commentText },
-      { new: true }
-    )
-    .then((updatedComment) => {
-      if (updatedComment) {
-        res.status(200).json(updatedComment);
-      } else {
-        res.status(401).json({ message: `Not allowed!` });
-      }
-    })
-    .catch(next);
-}
+//   // if the userId is not the same as this one of the comment, the comment will not be updated
+//   commentModel
+//     .findOneAndUpdate(
+//       { _id: commentId, userId },
+//       { text: commentText },
+//       { new: true }
+//     )
+//     .then((updatedComment) => {
+//       if (updatedComment) {
+//         res.status(200).json(updatedComment);
+//       } else {
+//         res.status(401).json({ message: `Not allowed!` });
+//       }
+//     })
+//     .catch(next);
+// }
 
 function deleteComment(req, res, next) {
   const { commentId, recipeId } = req.params;
-  const { _id: userId } = req.user;
+//   const { _id: userId } = req.user;
 
   Promise.all([
-    commentModel.findOneAndDelete({ _id: commentId, userId }),
+    commentModel.findOneAndDelete({ _id: commentId }),
     // userModel.findOneAndUpdate({ _id: userId }, { $pull: { comments: commentId } }),
     recipeModel.findOneAndUpdate(
       { _id: recipeId },
@@ -98,6 +98,6 @@ module.exports = {
   // getLatestsComments,
   newComment,
   createComment,
-  editComment,
+//   editComment,
   deleteComment,
 };
