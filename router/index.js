@@ -13,7 +13,7 @@ router.post("/logout", authController.logout);
 router.use("/users", users);
 router.use("/recipes", recipes);
 router.use("/comments", comments);
-// router.use('/likes', likes);
+router.use("/likes", likes);
 // router.use('/test', test);
 
 router.get("/test", (req, res) => {

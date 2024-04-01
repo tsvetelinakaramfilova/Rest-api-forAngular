@@ -1,4 +1,4 @@
-const { recipeModel } = require("../models");
+const { recipeModel, userModel, commentModel } = require("../models");
 const { newComment } = require("./commentController");
 
 function getRecipes(req, res, next) {
@@ -17,7 +17,9 @@ function getRecipe(req, res, next) {
 
   recipeModel
     .findById(recipeId)
-    .populate("products").populate("userId")
+    .populate("products")
+    .populate("userId")
+    .populate("likedList")
     .then((recipe) => res.json(recipe))
     .catch(next);
 }
@@ -41,25 +43,26 @@ function createRecipe(req, res, next) {
     .catch(next);
 }
 
-function deleteRecipe(req, res, next){
-  // const { recipeId } = req.params;
+async function deleteRecipe(req, res, next) {
+  const { recipeId } = req.params;
 
-  const { commentId, recipeId } = req.params;
-    const { _id: userId } = req.user;
+  try {
+    const deletedRecipe = await recipeModel.findByIdAndDelete(recipeId);
 
-    Promise.all([
-      recipeModel.findOneAndDelete({ _id: recipeId }),
-        // userModel.findOneAndUpdate({ _id: userId }, { $pull: { comments: commentId } }),
-        // commentModel.findOneAndUpdate({ _id: recipeId, userId }),
-    ])
-        .then(([deletedOne, _, __]) => {
-            if (deletedOne) {
-                res.status(200).json(deletedOne)
-            } else {
-                res.status(401).json({ message: `Not allowed!` });
-            }
-        })
-        .catch(next);
+    if (!deletedRecipe) {
+      return res.status(404).json({ message: "Recipe not found." });
+    }
+    await userModel.updateMany(
+      { likedRecipes: recipeId },
+      { $pull: { likedRecipes: recipeId } }
+    );
+    await commentModel.deleteMany({ recipeId });
+
+    res.status(200).json({ message: "Recipe deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting recipe:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
 }
 
 function updatedRecipe(req, res, next) {
@@ -69,7 +72,7 @@ function updatedRecipe(req, res, next) {
   recipeModel
     .findByIdAndUpdate(
       { _id: recipeId },
-      { recipeName, category, products, image, description } ,
+      { recipeName, category, products, image, description },
       { new: true }
     )
     .then((updatedRecipe) => {
@@ -82,15 +85,36 @@ function like(req, res, next) {
   const { recipeId } = req.params;
   const { _id: userId } = req.user;
 
-  console.log("like");
-
-  recipeModel
-    .updateOne(
+  Promise.all([
+    userModel.findOneAndUpdate(
+      { _id: userId },
+      { $push: { likedRecipes: recipeId } }
+    ),
+    recipeModel.findOneAndUpdate(
       { _id: recipeId },
-      { $addToSet: { likes: userId } },
-      { new: true }
-    )
+      { $push: { likedList: userId } }
+    ),
+  ])
     .then(() => res.status(200).json({ message: "Liked successful!" }))
+    .catch(next);
+
+}
+
+function dislike(req, res, next) {
+  const { recipeId } = req.params;
+  const { _id: userId } = req.user;
+
+  Promise.all([
+    userModel.findOneAndUpdate(
+      { _id: userId },
+      { $pull: { likedRecipes: recipeId } }
+    ),
+    recipeModel.findOneAndUpdate(
+      { _id: recipeId },
+      { $pull: { likedList: userId } }
+    ),
+  ])
+    .then(() => res.status(200).json({ message: "Disliked successful!" }))
     .catch(next);
 }
 
@@ -101,4 +125,5 @@ module.exports = {
   deleteRecipe,
   updatedRecipe,
   like,
+  dislike,
 };
