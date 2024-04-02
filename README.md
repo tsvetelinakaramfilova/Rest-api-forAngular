@@ -1,3 +1,3 @@
 ## Start the project
-npm i 
+npm i
 npm start 
