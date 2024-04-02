@@ -6,6 +6,16 @@ function getRecipes(req, res, next) {
 
   recipeModel
     .find()
+    .limit(limit)
+    .then((recipes) => res.json(recipes))
+    .catch(next);
+}
+
+function getLastRecipes(req, res, next) {
+  const limit = Number(req.query.limit) || 0;
+
+  recipeModel
+    .find()
     .sort({ created_at: -1 })
     .limit(limit)
     .then((recipes) => res.json(recipes))
@@ -120,6 +130,7 @@ function dislike(req, res, next) {
 
 module.exports = {
   getRecipes,
+  getLastRecipes,
   createRecipe,
   getRecipe,
   deleteRecipe,
