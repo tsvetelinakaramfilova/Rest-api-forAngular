@@ -12,6 +12,7 @@ router.post('/', auth(), recipeController.createRecipe);
 router.get('/:recipeId', recipeController.getRecipe);
 router.put('/:recipeId', auth(), recipeController.updatedRecipe);
 router.delete('/:recipeId', auth(), recipeController.deleteRecipe);
+router.get('/search/:searchText', recipeController.searchRecipe)
 // router.get('/my-trips/:id/reservations', auth(), recipeController.getReservations);
 
 module.exports = router

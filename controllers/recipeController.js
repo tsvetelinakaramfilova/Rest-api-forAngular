@@ -34,6 +34,14 @@ function getRecipe(req, res, next) {
     .catch(next);
 }
 
+function searchRecipe(req, res, next) {
+  const { searchText } = req.params;
+
+  recipeModel.find({recipeName: { $regex: `^${searchText}`, $options: "i" } })
+  .then((recipes) => res.json(recipes))
+  .catch(next);
+}
+
 function createRecipe(req, res, next) {
   const { recipeName, category, products, image, description } = req.body;
   const { _id: userId } = req.user;
@@ -107,7 +115,6 @@ function like(req, res, next) {
   ])
     .then(() => res.status(200).json({ message: "Liked successful!" }))
     .catch(next);
-
 }
 
 function dislike(req, res, next) {
@@ -131,8 +138,9 @@ function dislike(req, res, next) {
 module.exports = {
   getRecipes,
   getLastRecipes,
-  createRecipe,
   getRecipe,
+  searchRecipe,
+  createRecipe,
   deleteRecipe,
   updatedRecipe,
   like,
