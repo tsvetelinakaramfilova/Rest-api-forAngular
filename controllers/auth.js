@@ -79,6 +79,37 @@ function login(req, res, next) {
     .catch(next);
 }
 
+function changePassword(req, res, next) {
+  const { _id: userId } = req.user;
+  const { password, newPassword } = req.body;
+
+  userModel
+    .findOne({ _id: userId })
+    .then((user) => {
+      if (!user) {
+        res.status(404).send({ message: "User not found" });
+        return;
+      }
+
+      return Promise.all([user, user.matchPassword(password)]);
+    })
+    .then(([user, match]) => {
+      if (!match) {
+        res.status(401).send({ message: "Incorrect password" });
+        return;
+      }
+
+      // Update the user's password
+      user.password = newPassword;
+      return user.save();
+    })
+    .then((updatedUser) => {
+      res.status(200).send({ message: "Password updated successfully" });
+    })
+    .catch(next);
+}
+
+
 function logout(req, res) {
   const token = req.cookies[authCookieName];
 
@@ -127,4 +158,5 @@ module.exports = {
   logout,
   getProfileInfo,
   editProfileInfo,
+  changePassword,
 };
