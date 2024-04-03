@@ -43,13 +43,14 @@ function searchRecipe(req, res, next) {
 }
 
 function createRecipe(req, res, next) {
-  const { recipeName, category, products, image, description } = req.body;
+  const { recipeName, category, timeToCook, products, image, description } = req.body;
   const { _id: userId } = req.user;
 
   recipeModel
     .create({
       recipeName,
       category,
+      timeToCook,
       products,
       image,
       description,
@@ -85,12 +86,12 @@ async function deleteRecipe(req, res, next) {
 
 function updatedRecipe(req, res, next) {
   const recipeId = req.params.recipeId;
-  const { recipeName, category, products, image, description } = req.body;
+  const { recipeName, category, timeToCook, products, image, description } = req.body;
 
   recipeModel
     .findByIdAndUpdate(
       { _id: recipeId },
-      { recipeName, category, products, image, description },
+      { recipeName, category, timeToCook, products, image, description },
       { new: true }
     )
     .then((updatedRecipe) => {
